@@ -1,62 +1,119 @@
-# sorteio-github-stars
+# GitHub Stars Raffle
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+Web app built with Quarkus that loads recent GitHub stargazers and lets you draw a random winner from the loaded participants.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+The browser UI is served from the application itself. On page load it fetches the participant list from the backend, shows the loaded stargazers, and enables the raffle button only after data is available.
 
-## Running the application in dev mode
+## What the app does
 
-You can run your application in dev mode that enables live coding using:
+- Calls GitHub’s stargazers API for the configured repository.
+- Filters the results to include only recent stars.
+- Exposes the participant list through `/quarkus-flow/stargazers`.
+- Lets you reload participants and draw a winner in the browser.
 
-```shell script
+## Prerequisites
+
+- Java 25
+- Maven Wrapper (`./mvnw`)
+- Internet access to reach GitHub’s API
+- Docker if you want to build or run container images
+- GraalVM is optional for native builds; you can also use container-based native compilation
+
+## Configuration
+
+The backend endpoint used by the workflow is configured in [`src/main/resources/application.properties`](src/main/resources/application.properties):
+
+```properties
+github.quarkiverse.quarkus-flow.url=https://api.github.com/repos/quarkiverse/quarkus-flow/stargazers?per_page=100
+```
+
+This URL points to GitHub’s stargazers API for the `quarkiverse/quarkus-flow` repository.
+
+## Run in development mode
+
+Start the application with live reload:
+
+```shell
 ./mvnw quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+Open the app at:
 
-## Packaging and running the application
+- <http://localhost:8080>
+- Quarkus Dev UI: <http://localhost:8080/q/dev/>
 
-The application can be packaged using:
+## Build and run the JVM application
 
-```shell script
+Package the application:
+
+```shell
 ./mvnw package
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+Run the packaged app:
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
+```shell
+java -jar target/quarkus-app/quarkus-run.jar
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+## Build a native executable
 
-## Creating a native executable
+Build locally with GraalVM:
 
-You can create a native executable using:
-
-```shell script
+```shell
 ./mvnw package -Dnative
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+If you do not have GraalVM installed, use a container-based native build:
 
-```shell script
+```shell
 ./mvnw package -Dnative -Dquarkus.native.container-build=true
 ```
 
-You can then execute your native executable with: `./target/sorteio-github-stars-1.0.0-SNAPSHOT-runner`
+Run the generated executable:
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+```shell
+./target/github-stars-raffle-1.0.0-SNAPSHOT-runner
+```
 
-## Provided Code
+## Docker
 
-### REST
+The repository includes Dockerfiles under `src/main/docker/` for JVM and native deployments.
 
-Easily start your REST Web Services
+### JVM image
 
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+```shell
+./mvnw package
+docker build -f src/main/docker/Dockerfile.jvm -t quarkus/github-stars-raffle-jvm .
+docker run -i --rm -p 8080:8080 quarkus/github-stars-raffle-jvm
+```
+
+### Native image
+
+```shell
+./mvnw package -Dnative
+docker build -f src/main/docker/Dockerfile.native -t quarkus/github-stars-raffle-native .
+docker run -i --rm -p 8080:8080 quarkus/github-stars-raffle-native
+```
+
+### Native micro image
+
+```shell
+./mvnw package -Dnative
+docker build -f src/main/docker/Dockerfile.native-micro -t quarkus/github-stars-raffle-native-micro .
+docker run -i --rm -p 8080:8080 quarkus/github-stars-raffle-native-micro
+```
+
+## How the raffle flow works
+
+1. The browser calls `/quarkus-flow/stargazers`.
+2. `StargazersResource` starts the workflow and returns the participant set as JSON.
+3. `StargazersWorkflow` requests GitHub’s stargazers API and filters the results to recent stars.
+4. The UI renders the loaded participants and enables the **Draw winner** button.
+5. Clicking **Draw winner** selects one of the loaded participants at random.
+
+## Learn more
+
+- Quarkus: <https://quarkus.io/>
+- Native builds: <https://quarkus.io/guides/maven-tooling>
+- Docker-based native builds: <https://quarkus.io/guides/building-native-image>
