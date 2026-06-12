@@ -15,7 +15,7 @@ public class StargazersResource {
     StargazersWorkflow workflow;
 
     @GET
-    public Uni<Set<Stargazer>> getStars() {
+    public Uni<Set<Stargazer>> getStargazers() {
         return workflow.startInstance()
                 .onItem()
                 .transform(model -> model
